@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>완벽에 대한 의뢰</title>
+<style>
+:root {
+  --accent: #ff4d9e;    /* 강한 네온핑크 */
+  --accent2: #9eb7ff;   /* 부드러운 네온블루 */
+  --bg: #000000;         /* 배경은 그대로 검정 */
+  --text: #d1d9e8;      /* 연한 회색 */
+}
+
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg) url('background.jpg') no-repeat center center fixed;
+  background-size: cover;
+  color: var(--text);
+  font-family: Pretendard, sans-serif;
+  overflow: hidden;
+  position: relative;
+}
+
+#overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0,0,0,0.75); /* 첫 코드와 동일 */
+  z-index: 1;
+  pointer-events: none;
+}
+
+.game-intro { 
+  top: 50px; 
+  text-align: center; 
+  font-size: 1rem; 
+  color: #ff85b3; 
+  opacity: 0.9; 
+  margin-top: 20px; 
+  margin-bottom: -5px; 
+  letter-spacing: 0.03em; 
+  text-shadow: 0 0 6px rgba(255,130,179,0.3); 
+  z-index: 10; 
+  position: relative; 
+}
+
+h1 { 
+  text-align: center; 
+  top: 110px; 
+  margin: 10px 0 5px; 
+  color: #ff4d9e; 
+  font-size: 1.2rem; 
+  font-weight: 600; 
+  position: relative; 
+  z-index: 10; 
+  pointer-events: none; 
+  text-shadow: 0 0 10px rgba(255,77,158,0.6); 
+}
+
+
+#game-area { 
+  position: relative; 
+  top: 50px;
+  width: 100vw; 
+  height: calc(80vh - 40px); 
+  overflow: hidden; 
+  z-index: 5;
+}
+
+canvas#wordCanvas {
+  position: absolute;
+  left: 0;
+  top: 0px;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: auto;
+  background: transparent;
+}
+
+canvas#particleCanvas, canvas#burstCanvas { 
+  position: fixed; 
+  left:0; top:0; 
+  pointer-events: none; 
+}
+
+canvas#particleCanvas { z-index: 8; }
+canvas#burstCanvas { z-index: 9; }
+
+#ability-inventory { 
+  position: fixed; 
+  right: 100px; 
+  top: 80px; 
+  width: 150px; 
+  padding: 10px; 
+  background: rgba(0,0,0,0.45); 
+  border-radius: 5px; 
+  color: var(--text); 
+  z-index: 10; 
+}
+
+#ability-inventory h2 {
+  font-size: 1rem; 
+  text-align: center; 
+  margin:0 0 10px 0; 
+  color:#ff85b3; 
+}
+
+#inventory-list { 
+  display:flex; 
+  flex-direction: column; 
+  gap:10px; 
+}
+
+.inventory-item { 
+  font-size:0.85rem; 
+  padding:4px 8px; 
+  background:#2f3e52; 
+  color:#d1d9e8; 
+  border-radius:3px; 
+  text-align:center; 
+  border:0px solid #3f5065; 
+  opacity:1; 
+}
+
+#game-record { 
+  position: fixed; 
+  left: 100px; 
+  top: 80px; 
+  width: 200px; 
+  padding: 10px; 
+  background: rgba(0,0,0,0.45); 
+  border-radius: 5px; 
+  color: var(--text); 
+  z-index: 10; 
+}
+
+#game-record h2 { 
+  font-size: 1rem; 
+  text-align: center; 
+  margin: 0 0 5px 0; 
+  color: #ff85b3; 
+}
+
+#record-stats div, #record-log div { 
+  font-size: 0.85rem; 
+  padding:4px 8px; 
+  background:#2f3e52; 
+  color:#d1d9e8; 
+  border-radius:3px; 
+  text-align:center; 
+  margin-bottom:4px; 
+}
+
+#round-timer {
+  position: fixed;
+  top: 17.5%;
+  right: 847px;
+  transform: translateY(20%);
+  font-size: 1.2rem;
+  color: #ff85b3;        /* 초 타이머 색상 */
+  z-index: 20;
+  text-shadow: 0 0 6px rgba(255,130,179,0.5); /* 글로우 */
+  pointer-events: none;
+}
+
+
+</style>
+
+</head>
+<body>
+<audio id="bgm" src="bad.mp3" loop></audio>
+
+
+<div id="overlay"></div>
+
+<canvas id="particleCanvas"></canvas>
+<canvas id="burstCanvas"></canvas>
+
+<div class="game-intro"></div>
+<h1 id="target-word">?</h1>
+<div id="game-area"></div>
+
+<div id="ability-inventory">
+  <h2>획득한 능력</h2>
+  <div id="inventory-list"></div>
+  <div id="hint-area" style="text-align:center; margin-top:15px;">
+  <button id="btn-hint" style="width:100%; padding:8px; margin-bottom:8px; background:#ff85b3; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600;">정답</button>
+  <button id="btn-tip" style="width:100%; padding:8px; background:#ff85b3; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600;">힌트</button>
+  <div id="tip-message" style="margin-top:10px; color:#ff66cc; font-weight:400; font-size: 13px"></div>
+</div>
+
+
+</div>
+
+</div>
+
+<div id="game-record">
+  <h2>게임 기록</h2>
+  <div id="record-stats">
+    <div>성공: <span id="win-count">0</span></div>
+    <div>실패: <span id="lose-count">0</span></div>
+  </div>
+  <h2>-</h2>
+  <h2>최근 기록</h2>
+  <div id="record-log"></div>
+</div>
+
+<div id="round-timer">10</div>
+
+
+
+<script>
+
+// 🔫 정답 효과음
+const gunSound = new Audio('gun.mp3');
+gunSound.volume = 0.8;
+gunSound.preload = 'auto';
+
+
+  let totalGameTime = 60; // 30초
+const totalTimerEl = document.createElement('div');
+totalTimerEl.id = 'total-game-timer';
+totalTimerEl.style.position = 'fixed';
+totalTimerEl.style.top = '50px';
+totalTimerEl.style.left = '50%';
+totalTimerEl.style.transform = 'translateX(-50%)';
+totalTimerEl.style.color = '#ff85b3';
+totalTimerEl.style.fontSize = '2.5rem';
+totalTimerEl.style.zIndex = '9999';
+totalTimerEl.style.pointerEvents = 'none';
+totalTimerEl.textContent = totalGameTime;
+document.body.appendChild(totalTimerEl);
+
+const totalGameInterval = setInterval(()=>{
+  totalGameTime--;
+  totalTimerEl.textContent = totalGameTime;
+  if(totalGameTime <= 0){
+    clearInterval(totalGameInterval);
+    alert('총 게임 시간이 종료되었습니다!');
+    window.location.href = "result.html";
+  }
+}, 1000);
+// ===== 데이터(원본과 동일) =====
+const abilities = ["용기","지혜","열정","창의력","인내"];
+const distractors = [
+  "욕심","결단","감정","성실","희망","명예","신념","배려","호기심","헌신",
+  "유혹","책임","관용","절제","관찰","근성","정의","의심","열망","신중",
+  "겸손","사랑","두려움","관심","자존심","도전정신","희생","긍정","의지",
+  "냉정","통찰","연민","상상","창조","몰입","끈기","열정","집중력",
+  "포용","도덕","정직","사고력","소통","공감","추진력","지혜","창의력",
+  "용기","인내","균형","유연함","책임감","헌신","배려심","도전","결단력"
+];
+const colors = ["#2f3e52","#3f5065","#4e627a","#5d7390"];
+let inventoryStatus = Array(abilities.length).fill(false);
+
+const targetEl = document.getElementById('target-word');
+const area = document.getElementById('game-area');
+const burstCanvas = document.getElementById('burstCanvas');
+const burstCtx = burstCanvas.getContext('2d');
+const timerEl = document.getElementById('round-timer');
+
+let currentTarget = "";
+let roundTimer = null;
+let countdownInterval = null;
+
+// ===== 인벤토리 (원본과 동일) =====
+function initInventory() {
+  const list = document.getElementById('inventory-list');
+  list.innerHTML = "";
+  abilities.forEach(() => {
+    const item = document.createElement('div');
+    item.className = 'inventory-item';
+    item.textContent = "-";
+    list.appendChild(item);
+  });
+}
+initInventory();
+
+function addToInventory(word) {
+  const index = abilities.indexOf(word);
+  if (index === -1 || inventoryStatus[index]) return;
+
+  inventoryStatus[index] = true;
+  document.getElementById('inventory-list').children[index].textContent = word;
+}
+
+
+
+const recordLog = document.getElementById('record-log');
+function addRecordLog(msg) {
+  const div=document.createElement('div');
+  div.textContent=msg;
+  recordLog.prepend(div);
+  if(recordLog.children.length>5) recordLog.removeChild(recordLog.lastChild);
+}
+
+// ===== 폭발 (원본 버스트) =====
+function resizeBurstCanvas() { burstCanvas.width = window.innerWidth; burstCanvas.height = window.innerHeight; }
+resizeBurstCanvas(); window.addEventListener('resize',resizeBurstCanvas);
+function burstEffect(x,y){
+  const particles=[];
+  for(let i=0;i<40;i++){
+    particles.push({ x,y, vx:(Math.random()-0.5)*6, vy:(Math.random()-0.5)*6, life:30+Math.random()*20, size:2+Math.random()*2, color: colors[Math.floor(Math.random()*colors.length)] });
+  }
+  const animate=()=>{
+    burstCtx.clearRect(0,0,burstCanvas.width,burstCanvas.height);
+    particles.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.vx*=0.95; p.vy*=0.95; p.life--;
+      const alpha=p.life/50;
+      burstCtx.beginPath(); burstCtx.fillStyle=p.color; burstCtx.globalAlpha=Math.max(0,alpha);
+      burstCtx.arc(p.x,p.y,p.size,0,Math.PI*2); burstCtx.fill();
+      burstCtx.globalAlpha=1;
+    });
+    if(particles.some(p=>p.life>0)) requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+// ===== 캔버스 준비 (수정된 부분) =====
+const wordCanvas = document.createElement('canvas');
+wordCanvas.id = 'wordCanvas';
+wordCanvas.style.position = 'absolute';
+wordCanvas.style.left = '0';
+wordCanvas.style.top = '0';
+wordCanvas.style.width = '100%';
+wordCanvas.style.height = '100%';
+wordCanvas.style.pointerEvents = 'auto';
+area.appendChild(wordCanvas);
+
+const wCtx = wordCanvas.getContext('2d');
+
+// particleCanvas 준비
+let pCtx;
+let particleCanvas = document.getElementById('particleCanvas');
+if(!particleCanvas){
+  particleCanvas = document.createElement('canvas');
+  particleCanvas.id = 'particleCanvas';
+  particleCanvas.style.position = 'fixed';
+  particleCanvas.style.left = '0';
+  particleCanvas.style.top = '0';
+  particleCanvas.style.pointerEvents = 'none';
+  particleCanvas.style.zIndex = 8;
+  document.body.appendChild(particleCanvas);
+}
+pCtx = particleCanvas.getContext('2d');
+
+// 캔버스 리사이즈: **wordCanvas 크기를 game-area (실제 영역) 사이즈로 맞춤**
+function resizeCanvases(){
+  const rect = area.getBoundingClientRect();
+  // wordCanvas의 내부 픽셀 크기를 game-area와 정확히 맞춘다
+  wordCanvas.width = rect.width;
+  wordCanvas.height = rect.height;
+  wordCanvas.style.left = rect.left + 'px';
+  wordCanvas.style.top = rect.top + 'px';
+  // particle/burst full window
+  particleCanvas.width = window.innerWidth;
+  particleCanvas.height = window.innerHeight;
+  resizeBurstCanvas();
+}
+resizeCanvases();
+window.addEventListener('resize', resizeCanvases);
+
+// ===== 파티클 (원본과 동일) =====
+let particles=[];
+document.addEventListener('mousemove',e=>{
+  for(let i=0;i<2;i++) particles.push({x:e.clientX,y:e.clientY,vx:(Math.random()-0.5)*1.2,vy:(Math.random()-0.5)*1.2,life:25+Math.random()*10,size:1+Math.random()*1.8});
+});
+function drawParticles(){
+  if(!pCtx) return;
+  pCtx.clearRect(0,0,particleCanvas.width, particleCanvas.height);
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.life--;
+    const alpha=Math.max(0,p.life/25);
+   pCtx.beginPath(); 
+pCtx.fillStyle=`rgba(255,102,204,${alpha})`; // 핑크색
+pCtx.arc(p.x,p.y,p.size,0,Math.PI*2); 
+pCtx.fill();
+
+    if(p.life<=0) particles.splice(i,1);
+  }
+  requestAnimationFrame(drawParticles);
+}
+drawParticles();
+
+// ===== 단어 데이터 및 렌더/회전 루프 (canvas) =====
+let wordObjects = []; // { text, x, y, z, isTarget, color, removed, screenX, screenY, radius }
+let angleY = 0;
+
+// spawnWordsToCanvas: 캔버스의 실제 픽셀 크기(wordCanvas.width/height)를 기준으로 위치 계산
+function spawnWordsToCanvas(targetWord, count=1){
+ const radiusX = Math.min(wordCanvas.width, wordCanvas.height) * 0.42;
+const radiusY = Math.min(wordCanvas.width, wordCanvas.height) * 0.36;
+
+
+  const allWords = [];
+  for(let i=0;i<count;i++) allWords.push(distractors[Math.floor(Math.random()*distractors.length)]);
+  allWords.push(targetWord);
+
+  allWords.forEach(wordText => {
+    const phi=Math.random()*Math.PI;
+    const theta=Math.random()*2*Math.PI;
+    const x = radiusX*Math.sin(phi)*Math.cos(theta);
+    const y = radiusY*Math.sin(phi)*Math.sin(theta);
+    const z = radiusY*Math.cos(phi);
+    const color = colors[Math.floor(Math.random()*colors.length)];
+    wordObjects.push({
+      text: wordText,
+      x, y, z,
+      isTarget: wordText === targetWord,
+      color,
+      removed: false,
+      screenX:0, screenY:0, radius:20,
+      // 추가된 히트박스 기본값(나중에 렌더에서 계산)
+      width: 0, height: 0, hitX: 0, hitY: 0
+    });
+  });
+}
+
+// draw loop: **wordCanvas의 width/height를 사용해서** 중심과 반지름 계산
+function drawWordsLoop() {
+  const cx = wordCanvas.width / 2;
+  const cy = wordCanvas.height / 2;
+  const radiusY = Math.min(wordCanvas.width, wordCanvas.height) * 0.30;
+
+  wCtx.clearRect(0, 0, wordCanvas.width, wordCanvas.height);
+
+  angleY -= 0.0025; // 회전 속도
+
+  // z(깊이) 기준 정렬
+  const sorted = wordObjects.slice().sort((a, b) => {
+  if (a.isTarget && !b.isTarget) return 1;   // 정답 단어를 항상 맨 위로
+  if (!a.isTarget && b.isTarget) return -1;  
+  return (b.z - a.z);  // 아니면 기존 깊이 정렬
+});
+
+  for (const w of sorted) {
+    if (w.removed) continue;
+
+    // 3D Y축 회전
+    const x = w.x * Math.cos(angleY) - w.z * Math.sin(angleY);
+    const z = w.x * Math.sin(angleY) + w.z * Math.cos(angleY);
+
+    const scale = (z + radiusY) / (2 * radiusY) + 0.5; // 0.5~1.5
+    const fontSize = Math.round(16 * scale) + (w.isTarget ? 3 : 0);
+
+    wCtx.font = `${fontSize}px Pretendard, sans-serif`;
+    wCtx.textAlign = 'center';
+    wCtx.textBaseline = 'middle';
+
+    const normalColor = `rgba(200,210,220,${0.6 + 0.4 * Math.min(1, scale)})`;
+    const targetColor = 'rgba(255,182,193,0.8)';
+
+    wCtx.fillStyle = w.isTarget ? targetColor : normalColor;
+
+    wCtx.globalAlpha = 1;
+    wCtx.shadowColor = w.isTarget ? "rgba(158,183,255,0.6)" : "rgba(0,0,0,0.15)";
+    wCtx.shadowBlur = w.isTarget ? 8 : 1;
+
+    // 중앙 기준 좌표 계산
+    let sx = cx + x * scale - 20;
+    let sy = cy + w.y * scale;
+
+    // ★ 단어가 화면 밖으로 나가지 않도록 clamp
+    const padding = fontSize / 2;
+    sx = Math.min(Math.max(sx, padding), wordCanvas.width - padding);
+    sy = Math.min(Math.max(sy, padding), wordCanvas.height - padding);
+
+    wCtx.fillText(w.text, sx, sy);
+
+    // --- 여기서 히트박스(사각형) 계산 추가 (보이지 않음) ---
+    const metrics = wCtx.measureText(w.text);
+    const textWidth = metrics.width;
+    const textHeight = fontSize * 1.0; // 대략 텍스트 높이(폰트별 오차 존재)
+    // 히트 박스에 여유(padding)를 약간 줌
+    const padX = 10;
+    const padY = 6;
+    w.width = textWidth + padX * 2;
+    w.height = textHeight + padY * 2;
+    // hitX, hitY 는 캔버스 로컬 좌표 기준
+    w.hitX = sx - (w.width / 2);
+    w.hitY = sy - (w.height / 2);
+
+    // 상호작용 좌표 저장 (기존 코드와 호환 유지)
+    w.screenX = sx;
+    w.screenY = sy;
+    w.radius = Math.max(16, fontSize * 0.8);
+
+    wCtx.shadowBlur = 0;
+  }
+
+  requestAnimationFrame(drawWordsLoop);
+}
+
+drawWordsLoop();
+
+// ===== 클릭 판정: 캔버스 클릭 이벤트에서 클라이언트 좌표를 캔버스 로컬 좌표로 변환하여 판정 =====
+wordCanvas.addEventListener('click', (e) => {
+  // 캔버스의 화면 내 위치 정보
+  const rect = wordCanvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left; // 캔버스 로컬 X
+  const my = e.clientY - rect.top;  // 캔버스 로컬 Y
+
+  // 앞에(깊이 큰) 단어 우선 탐색
+  const sorted = wordObjects.slice().sort((a,b) => (b.z - a.z));
+  let hit = null;
+  for(const w of sorted){
+    if(w.removed) continue;
+
+    // === 원형 거리 판정 대신, 보이지 않는 히트박스(rect) 판정 사용 ===
+    if (
+      mx >= w.hitX &&
+      mx <= w.hitX + w.width &&
+      my >= w.hitY &&
+      my <= w.hitY + w.height
+    ) {
+      hit = w;
+      break;
+    }
+  }
+
+  if(hit){
+    if(hit.text === currentTarget){
+      // 🔫 정답 효과음 (앞 2초 스킵)
+gunSound.currentTime = 2.5;
+gunSound.play();
+
+
+      // 정답 처리: 원본 코드와 동일하게 동작하도록 유지
+      hit.removed = true;
+      // burstEffect는 화면(client) 좌표를 사용하므로 그대로 e.clientX/Y 전달
+      burstEffect(e.clientX, e.clientY);
+      addToInventory(currentTarget);
+      document.getElementById('win-count').textContent = parseInt(document.getElementById('win-count').textContent)+1;
+      addRecordLog(`${currentTarget} 선택`);
+      clearTimeout(roundTimer);
+      clearInterval(countdownInterval);
+      setTimeout(()=>startNextRound(),1500);
+    } else {
+      // 오답 클릭: 원본과 동일
+      const loseCountEl=document.getElementById('lose-count');
+      loseCountEl.textContent=parseInt(loseCountEl.textContent)+1;
+      addRecordLog(`오답: ${hit.text} 클릭`);
+      burstEffect(e.clientX, e.clientY);
+    }
+  } else {
+    // 빈 공간 클릭: 원본과 동일
+    const loseCountEl=document.getElementById('lose-count');
+    loseCountEl.textContent=parseInt(loseCountEl.textContent)+1;
+    addRecordLog(`빈 공간 클릭`);
+  }
+});
+function addToInventory(word) {
+  const index = abilities.indexOf(word);
+  if (index === -1 || inventoryStatus[index]) return;
+
+  inventoryStatus[index] = true;
+  document.getElementById('inventory-list').children[index].textContent = word;
+
+  // --- 모든 능력 획득 시 결과 저장 + 페이지 이동 ---
+  if (inventoryStatus.every(v => v === true)) {
+
+    const winCount = document.getElementById('win-count').textContent;
+    const loseCount = document.getElementById('lose-count').textContent;
+
+    const logs = Array.from(document.getElementById("record-log").children)
+                      .map(el => el.textContent);
+
+    localStorage.setItem("gameResult", JSON.stringify({
+        wins: winCount,
+        losses: loseCount,
+        abilities: abilities,
+        log: logs
+    }));
+
+    // --- 새 코드 시작: 전체화면 오버레이 메시지 ---
+    const overlayMsg = document.createElement('div');
+    overlayMsg.id = 'all-abilities-overlay';
+    overlayMsg.style.position = 'fixed';
+    overlayMsg.style.top = '0';
+    overlayMsg.style.left = '0';
+    overlayMsg.style.width = '100vw';
+    overlayMsg.style.height = '100vh';
+    overlayMsg.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    overlayMsg.style.display = 'flex';
+    overlayMsg.style.justifyContent = 'center';
+    overlayMsg.style.alignItems = 'center';
+    overlayMsg.style.color = '#fff';
+    overlayMsg.style.fontSize = '1.5rem';
+    overlayMsg.style.zIndex = '9999';
+    overlayMsg.style.pointerEvents = 'none';
+    overlayMsg.textContent = '능력을 모두 획득했습니다';
+    document.body.appendChild(overlayMsg);
+    // --- 새 코드 끝 ---
+
+    setTimeout(() => {
+      window.location.href = "result.html";
+    }, 3000);
+  }
+}
+
+
+
+
+// ===== 라운드 제어 (원본과 동일 로직 유지) =====
+let remainingTargets=[...abilities];
+
+function startNextRound(){
+  if(roundTimer) clearTimeout(roundTimer);
+  if(countdownInterval) clearInterval(countdownInterval);
+
+  if(remainingTargets.length===0) remainingTargets=[...abilities];
+  const idx=Math.floor(Math.random()*remainingTargets.length);
+  currentTarget=remainingTargets[idx];
+  remainingTargets.splice(idx,1);
+
+  targetEl.textContent=currentTarget;
+
+  // 새 라운드 때는 wordObjects에 새로 spawn (원본 spawnWords 동작 재현)
+  spawnWordsToCanvas(currentTarget,80);
+
+  // 10초 타이머 (원본과 동일)
+  let timeLeft=10;
+  timerEl.textContent=timeLeft;
+  countdownInterval=setInterval(()=>{
+    timeLeft--;
+    timerEl.textContent=timeLeft;
+    if(timeLeft<=0) clearInterval(countdownInterval);
+  },1000);
+
+  roundTimer=setTimeout(()=>{
+    document.getElementById('lose-count').textContent=parseInt(document.getElementById('lose-count').textContent)+1;
+    addRecordLog(`${currentTarget} 시간 초과 실패`);
+    startNextRound();
+  },10000);
+}
+
+
+// ===== area 빈공간 클릭 핸들러 유지(안전용) =====
+area.addEventListener('click',(e)=>{
+  if(e.target && e.target.id === 'wordCanvas') return;
+  const loseCountEl=document.getElementById('lose-count');
+  loseCountEl.textContent=parseInt(loseCountEl.textContent)+1;
+  addRecordLog(`빈 공간 클릭`);
+});
+
+// ===== 팁 버튼 =====
+document.getElementById("btn-tip").addEventListener("click", () => {
+  const tipMessageEl = document.getElementById("tip-message");
+  tipMessageEl.textContent = "핑크색 단어를 찾아보세요";
+
+  // 3초 후 메시지 사라짐
+  setTimeout(() => {
+    tipMessageEl.textContent = "";
+  }, 700);
+});
+
+// ===== 힌트 버튼 =====
+document.getElementById("btn-hint").addEventListener("click", () => {
+  const idx = abilities.indexOf(currentTarget);
+
+  // 이미 획득한 능력 중복 처리 방지
+  if (inventoryStatus[idx] === true) return;
+
+  // 정답 하나 자동 획득 (addToInventory 호출)
+  addToInventory(currentTarget);
+
+  // 기록 로그에도 추가
+  addRecordLog("힌트 사용으로 자동 획득");
+
+  // 라운드 종료 → 다음 라운드
+  clearInterval(countdownInterval);
+  setTimeout(() => startNextRound(), 800);
+});
+
+const cursorImg = document.getElementById('cursor-img');
+document.addEventListener('mousemove', (e) => {
+  // 안전하게 cursorImg가 존재할 때만 접근
+  if (cursorImg) {
+    cursorImg.style.left = (e.clientX - cursorImg.width/2) + 'px';
+    cursorImg.style.top = (e.clientY - cursorImg.height/2) + 'px';
+  }
+});
+
+
+// ===== 시작 =====
+startNextRound();
+
+const bgm = document.getElementById('bgm');
+bgm.volume = 0.1;
+
+// 브라우저 정책 대응: 첫 사용자 인터랙션 시 재생
+document.addEventListener('click', () => {
+  if (bgm.paused) {
+    bgm.play();
+  }
+}, { once: true });
+
+
+</script>
+</body>
+</html>

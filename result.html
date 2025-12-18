@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>완벽에 대한 의뢰</title>
+<style>
+body {
+  margin: 0;
+  background: url('background1.jpg') no-repeat center center fixed;
+  background-size: cover;
+  color: #ff85b3;
+  font-family: Pretendard, sans-serif;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.55);
+  z-index: -1;
+}
+
+#overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.65);
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  pointer-events: none;
+}
+
+#tree-container {
+  position: relative;
+  width: 70vw;
+  max-width: 600px;
+  height: 80vh;
+  max-height: 800px;
+  background: url('tree.png') no-repeat bottom center;
+  background-size: contain;
+  z-index: 1;
+}
+
+#title {
+  color: #ff4d9e;
+  font-size: 1.2rem;
+  margin: 0;
+  position: absolute;
+  bottom: 95%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 600px;
+  height: 3.5em;        
+  text-align: center;
+  font-weight: 400;
+  z-index: 10;
+}
+
+#title span {
+  display: block;        
+  height: 1.5em;        
+}
+
+#subtitle {
+  color: #ff85b3; 
+  font-size: 0.8rem; 
+  position: absolute; 
+  top: calc(-1% + 10px); 
+  left: 50%; 
+  transform: translateX(-50%); 
+  white-space: nowrap;
+  z-index: 10;
+}
+
+#flower-layer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.flower {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  opacity: 0;
+  border-radius: 50%;
+  background: #FF7DAF;
+  pointer-events: none;
+  filter: none;
+}
+
+@keyframes sway {
+  0% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(-2px) rotate(-5deg); }
+  50% { transform: translateX(2px) rotate(5deg); }
+  75% { transform: translateX(-1px) rotate(-3deg); }
+  100% { transform: translateX(0) rotate(0deg); }
+}
+
+.flower.sway {
+  animation: sway 2s ease-in-out infinite;
+}
+
+#result-box {
+  position: absolute;
+  left: 60px;
+  top: 22%;
+  transform: translateY(-50%);
+  width: 250px;
+  color: #d1d9e8;
+  z-index: 1; /* overlay 아래 */
+}
+
+#result-box .box {
+  background: rgba(255,255,255,0.07);
+  padding: 15px;
+  border-radius: 5px;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.item { margin-bottom: 6px; }
+.ability { color:#9eb7ff; font-weight:bold; }
+
+#final-message {
+  color: #ff4d9e;
+  font-size: 1.4rem;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-45%, -45%);
+  opacity: 0;
+  text-align: center;
+  z-index: 10; /* overlay 위 */
+  line-height: 1.6;
+}
+
+#showResults, #restartBtn {
+  position: absolute;
+  bottom: 40px;
+  padding: 10px 20px;
+  background: #222;
+  color: #ff4d9e;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  z-index: 3;
+}
+
+#showResults { left: 55%; transform: translateX(-50%);}
+#restartBtn { left: 47%; transform: translateX(-50%); }
+
+.lesson-text {
+  position: fixed;
+  padding: 8px 12px;
+  border-radius: 100px;
+  color: #ff85b3; 
+  font-size: 0.9rem;
+  font-weight: 350;
+  pointer-events: none;
+  opacity: 0;
+  max-width: 280px; 
+  word-wrap: break-word;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.15);
+  border: 0.1px solid #ff85b3;
+  box-shadow: 0 0 3px rgba(255, 77, 158, 0.5);
+  z-index: 10; /* overlay 위 */
+}
+
+.spark {
+  position: fixed;
+  width: 6px;
+  height: 6px;
+  background: radial-gradient(circle, #ff4d9e, #ff85b3);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 1;
+  transform: translate(-50%, -50%);
+  animation: spark-fade 0.6s ease-out forwards;
+  box-shadow: 0 0 6px #ff4d9e;
+  z-index: 9;
+}
+
+@keyframes spark-fade {
+  0% { opacity: 1; transform: scale(1) translate(-50%, -50%); }
+  100% { opacity: 0; transform: scale(0.4) translate(-50%, -50%); }
+}
+</style>
+</head>
+<body>
+
+<div id="overlay"></div>
+
+<div id="tree-container">
+  <h1 id="title">당신의 도움으로 의뢰인은 나무의 꽃을 피워냈습니다.</h1>
+  <p id="subtitle">버튼을 눌러 외뢰 결과를 확인해보세요</p>
+  <div id="flower-layer"></div>
+</div>
+
+<div id="result-box">
+  <div class="box">
+    <div class="item">당신이 획득한 능력:</div>
+    <div class="item box-content"><span id="ability-list"></span></div>
+    <div class="item">성공 경험 <span id="wins"></span></div>
+    <div class="item">실패 경험 <span id="losses"></span></div>
+    <div class="item" style="margin-top:10px;"></div>
+    <div id="log" class="box-content"></div>
+  </div>
+</div>
+
+<div id="final-message"></div>
+
+<button id="showResults">결과 보기</button>
+<button id="restartBtn" onclick="window.location.href='result.html'">처음부터 다시 시작</button>
+
+<script>
+// 데이터 가져오기
+const data = JSON.parse(localStorage.getItem("gameResult"));
+if (!data) {
+  alert("결과 데이터가 없습니다. 먼저 게임을 진행해주세요.");
+  window.location.href = "index.html";
+}
+
+// 능력 교훈
+const lessons = {
+  "용기": "어렵고 무서운 상황에서 주저하지 않고<br>도전할 용기가 나무를 성장시켰습니다",
+  "지혜": "지혜를 바탕으로 어려운 상황 속에서도<br>나무가 성장할 수 있었습니다",
+  "창의력": "당신은 창의력을 바탕으로 다른<br>사람들과 다른 시선을 가지게 됩니다",
+  "인내": "인내를 바탕으로 나무가 자라는 과정을<br>꾸준히 지켜볼 수 있었습니다",
+  "열정": "매일 열정을 가지고 나무를 돌봐<br>꽃을 피워내게 되었습니다",
+  "실패": "성공만이 나무를 성장시키는 것은 아닙니다<br>실패가 거름이 되어 나무가 성장 할 수 있었습니다",
+  "시간 초과": "포기하지 않는 끈기를 바탕으로<br>나무가 성장했습니다"
+};
+
+// 결과 표시
+document.getElementById("ability-list").textContent = data.abilities.join(", ");
+document.getElementById("wins").textContent = data.wins;
+document.getElementById("losses").textContent = data.losses;
+
+const logEl = document.getElementById("log");
+
+// 꽃잎 생성
+function createFlowers(count=80) {
+  const container = document.getElementById("flower-layer");
+  const centerX = container.offsetWidth / 2;
+  const centerY = container.offsetHeight / 2.5;
+  const radiusX = container.offsetWidth * 0.6;
+  const radiusY = container.offsetHeight * 0.25;
+
+  for(let i=0; i<count; i++) {
+    const flower = document.createElement("div");
+    flower.classList.add("flower");
+    flower.style.background = Math.random() < 0.5 ? "#FFB6C1" : "#FF7DAF";
+
+    const r = Math.sqrt(Math.random()) * (0.7 + Math.random() * 0.4); 
+    const theta = Math.random() * 2 * Math.PI + (Math.random() - 0.5) * 0.2; 
+    const offsetX = (Math.random() - 0.5) * 30; 
+    const offsetY = (Math.random() - 0.5) * 30;
+    const x = centerX + radiusX * r * Math.cos(theta) + offsetX;
+    const y = centerY + radiusY * r * Math.sin(theta) + offsetY;
+
+    flower.style.left = `${x}px`;
+    flower.style.top = `${y}px`;
+
+    const size = 3 + Math.random() * 3;
+    flower.style.width = `${size}px`;
+    flower.style.height = `${size}px`;
+
+    const rotateX = Math.random()*360;
+    const rotateY = Math.random()*360;
+    const rotateZ = Math.random()*360;
+    flower.style.transform = `scale(0) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`;
+    container.appendChild(flower);
+
+    setTimeout(() => {
+      flower.style.transition = `opacity 0.8s ease-out, transform 0.9s cubic-bezier(.2,.9,.2,1)`;
+      flower.style.opacity = 1;
+      flower.style.transform = `scale(1) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`;
+    }, 50 + Math.random()*400);
+  }
+}
+
+// 원형 위치 계산
+function getCircularPosition(index, total, radiusX=550, radiusY=250) {
+    const container = document.getElementById("tree-container");
+    const centerX = container.offsetLeft + container.offsetWidth / 2;
+    const centerY = container.offsetTop + container.offsetHeight / 2;
+
+    const angle = (2 * Math.PI / total) * index;
+    const offsetX = (Math.random() - 0.5) * 40; 
+    const offsetY = (Math.random() - 0.5) * 30;
+
+    const x = centerX + radiusX * Math.cos(angle) + offsetX;
+    const y = centerY + radiusY * Math.sin(angle) + offsetY;
+
+    return { x, y };
+}
+
+// ===== results 배열 생성 =====
+const lessonsKeys = ["용기", "지혜", "창의력", "인내", "열정", "실패", "시간 초과"];
+const results = [];
+
+data.abilities.forEach(ability => {
+  if (lessonsKeys.includes(ability)) results.push(ability);
+});
+
+if(data.losses > 0 && !results.includes("실패")) results.push("실패");
+if(data.timeouts > 0 && !results.includes("시간 초과")) results.push("시간 초과");
+
+while(results.length < 7){
+  results.push("실패"); 
+}
+
+results.forEach(item => {
+  const div = document.createElement("div");
+  div.textContent = item;
+  div.style.opacity = 0;
+  logEl.appendChild(div);
+});
+
+let currentIndex = 0;
+
+function showFinalMessage(text){
+    const finalEl = document.getElementById("final-message");
+    finalEl.textContent = "";
+    finalEl.style.opacity = 1;  
+    const lines = text.split("\n");
+
+    lines.forEach(line => {
+        const span = document.createElement("span");
+        span.textContent = "";
+        finalEl.appendChild(span);
+        finalEl.appendChild(document.createElement("br"));
+    });
+
+    let lineIndex = 0;
+    let charIndex = 0;
+
+    function typeWriterFinal() {
+        if(lineIndex < lines.length){
+            const span = finalEl.children[lineIndex*2]; 
+            if(charIndex < lines[lineIndex].length){
+                span.textContent += lines[lineIndex].charAt(charIndex);
+                charIndex++;
+                setTimeout(typeWriterFinal, 80);
+            } else {
+                lineIndex++;
+                charIndex = 0;
+                setTimeout(typeWriterFinal, 80);
+            }
+        }
+    }
+
+    typeWriterFinal();
+}
+
+document.getElementById("showResults").addEventListener("click", () => {
+  const logChildren = Array.from(logEl.children);
+  const overlay = document.getElementById("overlay");
+
+  if (currentIndex >= logChildren.length) {
+    document.getElementById("subtitle").style.display = "none";
+    overlay.style.opacity = 1;
+
+    const finalText =
+"의뢰인처럼 당신도 완벽한 성공만을 추구하나요?\n하지만 의뢰인의 꽃을 피운 건 실패와 성공 모든 경험이었습니다";
+
+    showFinalMessage(finalText);
+    return;
+  }
+
+  const div = logChildren[currentIndex];
+  div.style.transition = "opacity 0.6s";
+  div.style.opacity = 1;
+
+  createFlowers(400);
+
+  let key = div.textContent.split(" ")[0]; 
+  let content = data.abilities.includes(key) ? lessons[key] : lessons[key.includes("시간") ? "시간 초과" : "실패"];
+
+  const lessonDiv = document.createElement("div");
+  lessonDiv.classList.add("lesson-text");
+  lessonDiv.innerHTML = content;
+  document.body.appendChild(lessonDiv);
+
+  const pos = getCircularPosition(currentIndex, logChildren.length);
+  lessonDiv.style.left = `${pos.x - lessonDiv.offsetWidth/2}px`;
+  lessonDiv.style.top = `${pos.y - lessonDiv.offsetHeight/2}px`;
+
+  setTimeout(() => { 
+      lessonDiv.style.transition = "opacity 1s"; 
+      lessonDiv.style.opacity = 1; 
+  }, 50);
+
+  currentIndex++;
+});
+</script>
+
+</body>
+</html> 

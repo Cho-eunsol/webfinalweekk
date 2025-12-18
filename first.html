@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>완벽에 대한 의뢰</title>
+
+<style>
+:root {
+  --bg: #000000;
+  --text: #d0d8e4;
+  --accent: #556680;
+  --panel: #0B101F;
+  --muted: #7a8aa1;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+
+body {
+  font-family: Pretendard, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: var(--bg);
+  background-image: url('background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  overflow: hidden;
+  padding: 10px;
+  cursor: pointer;
+}
+
+/* 배경 위 투명 오버레이 */
+#overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 200vw;
+  height: 100vh;
+  background-color: rgba(0,0,0,0.40);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.stage {
+  display: none;
+  width: 100%;
+  max-width: 770px;
+  text-align: center;
+  padding: 36px;
+  border-radius: 5px;
+  background-color: rgba(0,0,0,0.55);
+  backdrop-filter: blur(2px);
+  animation: fadeIn 420ms ease both;
+  position: relative; 
+  z-index: 1;
+}
+.stage.active { display: block; }
+
+button {
+  background: var(--accent);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: transform 140ms ease;
+}
+button:hover { transform: translateY(-3px); }
+
+.h-title {
+  font-size: 2rem;
+  margin: 6px 0 15px;
+  color: var(--muted);
+  padding-bottom: 20px;
+}
+.lead {
+  color: #ffff;
+  margin-bottom: 18px;
+  line-height: 1.7;
+  padding-bottom: 20px;
+  font-size: 20px;
+}
+
+/* 애니메이션 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 깜빡이는 커서 */
+@keyframes blink {
+  0%, 50%, 100% { opacity: 1; }
+  25%, 75% { opacity: 0; }
+}
+.cursor {
+  display: inline-block;
+  animation: blink 1s step-start infinite;
+}
+
+#explain-text {
+  color: #ffff; /* 원하는 색상 */
+  font-size: 20px;
+}
+
+</style>
+</head>
+
+<body>
+<audio id="bgm" src="bad.mp3" autoplay loop></audio>
+
+
+<!-- 검은색 투명 오버레이 -->
+<div id="overlay"></div>
+
+<!-- STAGE 1 -->
+<section class="stage active" id="stage-intro">
+  <div class="h-title"></div>
+  <div class="lead">당신에게 한 가지 의뢰가 들어왔습니다.</div>
+  <button id="btn-start">의뢰인의 메시지</button>
+</section>
+
+<!-- STAGE 2 : 설명 순차 -->
+<section class="stage" id="stage-select">
+  <div class="h-title"></div>
+  <img src="22.png" alt="설명 이미지" style="display:block; margin:15px auto; max-width:50%; height:auto; padding-bottom: 20px;">
+  <div class="lead" id="explain-text">첫 번째 설명: 캐릭터를 선택하면 시작할 수 있습니다.</div>
+</section>
+
+<!-- STAGE 3 -->
+<section class="stage" id="stage-result">
+  <div class="h-title"></div>
+  <div class="lead">시간 내에 능력을 찾아 의뢰를 완성하세요.</div>
+  <button class="link" id="btn-home">능력 찾으러 가기</button>
+</section>
+
+<script>
+/* STAGE 전환 */
+function showStage(stageEl){
+  document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+  stageEl.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function typeText(el, text, speed = 130, callback) {
+  el.textContent = '';
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor';
+  cursor.textContent = '|';
+  el.appendChild(cursor);
+
+  let i = 0;
+
+  // 🔊 매 설명 시작 시 소리 리셋 & 재생
+  keySound.currentTime = 0;
+  keySound.play();
+
+  const timer = setInterval(() => {
+    if (i < text.length) {
+      cursor.insertAdjacentText('beforebegin', text[i]);
+      i++;
+    } else {
+      clearInterval(timer);
+      keySound.pause();          // 🔇 타자 끝나면 멈춤
+      keySound.currentTime = 0;
+      if (callback) callback();
+    }
+  }, speed);
+}
+
+
+/* ===== 설명 순차 ===== */
+const explanations = [
+  "저는 실패가 두려워요. 그래서 이걸 해결해줄 6개의 능력이 필요합니다.",
+  "능력을 한 가지씩 찾을 때마다 나무가 자라나요.",
+  "능력을 모두 찾고 나무를 키워내 꼭 완벽한 존재를 만들겁니다.",
+  "그 조건으로 필요한 6가지의 능력을 함께 찾아주세요.",
+];
+
+let currentExplain = 0;
+
+/* 시작 버튼 클릭 시 */
+document.getElementById('btn-start').onclick = (e)=>{
+  e.stopPropagation();
+  currentExplain = 0;
+  typeText(document.getElementById('explain-text'), explanations[currentExplain]);
+  showStage(document.getElementById('stage-select'));
+};
+
+/* 화면 클릭 시 설명 전환 */
+document.body.addEventListener('click', ()=>{
+  const stageSelect = document.getElementById('stage-select');
+  if(stageSelect.classList.contains('active')){
+    currentExplain++;
+    if(currentExplain < explanations.length){
+      typeText(document.getElementById('explain-text'), explanations[currentExplain]);
+    } else {
+      showStage(document.getElementById('stage-result'));
+    }
+  }
+});
+
+/* 결과 스테이지에서 버튼 클릭 시 index.html로 이동 */
+document.getElementById('btn-home').onclick = ()=>{
+  window.location.href = "index.html";
+};
+/* 타자 소리 */
+const keySound = new Audio('key.mp3');
+keySound.volume = 0.6;   // 필요하면 조절
+
+const bgm = document.getElementById('bgm');
+bgm.volume = 0.5;
+
+// 페이지 로드 직후 재생 시도
+window.addEventListener('load', () => {
+  bgm.play().catch(() => {
+    // 자동재생이 막혔을 경우를 대비
+    console.log('자동재생 차단됨');
+  });
+});
+
+</script>
+
+</body>
+</html>
